@@ -15,14 +15,16 @@ Your browser does not support the HTML canvas tag.
 </style>
 
 <script>
+  let min = (a,b)=>a>b?b:a;
+  let c = document.getElementById("myCanvas");
+  let ctx = c.getContext("2d");
+
   let Draw = () => {
-    let c = document.getElementById("myCanvas");
-    let ctx = c.getContext("2d");
-    let min = (a,b)=>a>b?b:a
     let h = min(window.innerWidth, window.innerHeight);
     let w = h;
     ctx.canvas.width  = w;
     ctx.canvas.height = h;
+
     ctx.moveTo(0, 0);
     ctx.lineTo(w, h);
     ctx.stroke();
@@ -30,9 +32,9 @@ Your browser does not support the HTML canvas tag.
     ctx.beginPath();
     ctx.arc(w/2, h/2, w/2, 0, 2 * Math.PI);
     ctx.stroke();
-    requestAnimationFrame(Draw)
+    requestAnimationFrame(Draw);
   }
-  requestAnimationFrame(Draw)
+  requestAnimationFrame(Draw);
 </script>
 
 </body>
