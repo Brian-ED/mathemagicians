@@ -20,17 +20,15 @@ Your browser does not support the HTML canvas tag.
   let ctx = c.getContext("2d");
 
   let Draw = () => {
-    let h = min(window.innerWidth, window.innerHeight);
-    let w = h;
-    ctx.canvas.width  = w;
-    ctx.canvas.height = h;
+    let s = min(window.innerWidth, window.innerHeight); // s for Size
+    ctx.canvas.height = ctx.canvas.width  = s;
 
     ctx.moveTo(0, 0);
-    ctx.lineTo(w, h);
+    ctx.lineTo(s, s);
     ctx.stroke();
 
     ctx.beginPath();
-    ctx.arc(w/2, h/2, w/2, 0, 2 * Math.PI);
+    ctx.arc(s/2, s/2, s/2, 0, 2 * Math.PI);
     ctx.stroke();
     requestAnimationFrame(Draw);
   }
