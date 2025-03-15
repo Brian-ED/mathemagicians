@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<script src="./nerdamer/all.min.js"></script>  <!-- assuming you've saved the file in the root -->
 <html>
 <body>
 
@@ -30,8 +31,14 @@ Your browser does not support the HTML canvas tag.
     ctx.beginPath();
     ctx.arc(s/2, s/2, s/2, 0, 2 * Math.PI);
     ctx.stroke();
+
+    ctx.font = "50px Consolas"; // Sets text
+    ctx.fillText("Hellooo", 100, 100);
+
     requestAnimationFrame(Draw);
   }
+  let  e = nerdamer('x^2+2*(cos(x)+x*x)');
+  console.log(e.text());
   requestAnimationFrame(Draw);
 </script>
 
