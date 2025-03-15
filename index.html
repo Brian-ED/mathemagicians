@@ -2,20 +2,37 @@
 <html>
 <body>
 
-<canvas id="myCanvas" width="200" height="100" style="border:1px solid #000000;">
+<canvas id="myCanvas" width="100%" height="100" style="border:1px solid #000000;">
 Your browser does not support the HTML canvas tag.
 </canvas>
 
-<script>
-  var c = document.getElementById("myCanvas");
-  var ctx = c.getContext("2d");
-  ctx.moveTo(0, 0);
-  ctx.lineTo(200, 100);
-  ctx.stroke();
+<style>
+  html, body {
+    width:  100%;
+    height: 100%;
+    margin: 0;
+  }
+</style>
 
-  ctx.beginPath();
-  ctx.arc(95, 50, 40, 0, 2 * Math.PI);
-  ctx.stroke();
+<script>
+  let Draw = () => {
+    let c = document.getElementById("myCanvas");
+    let ctx = c.getContext("2d");
+    let min = (a,b)=>a>b?b:a
+    let h = min(window.innerWidth, window.innerHeight);
+    let w = h;
+    ctx.canvas.width  = w;
+    ctx.canvas.height = h;
+    ctx.moveTo(0, 0);
+    ctx.lineTo(w, h);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(w/2, h/2, w/2, 0, 2 * Math.PI);
+    ctx.stroke();
+    requestAnimationFrame(Draw)
+  }
+  requestAnimationFrame(Draw)
 </script>
 
 </body>
