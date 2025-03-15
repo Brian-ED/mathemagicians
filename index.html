@@ -2,10 +2,17 @@
 <script src="./nerdamer/all.min.js"></script>  <!-- assuming you've saved the file in the root -->
 <html>
 <body>
+  <img id="imgHat" style="display: none" src="hat.png">
+  <img id="imgHat2" style="display: none" src="hat2.png">
+  <img id="imgIntroDesk" style="display: none" src="intro-desk.png">
+  <img id="imgLevelNotebook" style="display: none" src="levelNotebook.jpg">
 
-<canvas id="myCanvas" width="100%" height="100" style="border:1px solid #000000;">
-Your browser does not support the HTML canvas tag.
-</canvas>
+  <canvas id="myCanvas" style="position:absolute" width="100%" height="100" style="border:1px solid #000000;">
+    Your browser does not support the HTML canvas tag.
+  </canvas>
+  <div style="position:absolute">
+    <button type="button" >Click Me!</button>
+  </div>
 
 <style>
   html, body {
@@ -18,22 +25,106 @@ Your browser does not support the HTML canvas tag.
   let min = (a,b)=>a>b?b:a;
   let c = document.getElementById("myCanvas");
   let ctx = c.getContext("2d");
+  let speed = 4
+  let button = {}
 
+  // ---------------
   // State variables
-  p1 = {
-    x:1,
-    y:2,
-    button: {},
-  };
+  // ---------------
+  let initState = {
+    p1: {
+      x:1,
+      y:2,
+    },
+    p2: {
+      x:1,
+      y:2,
+    },
+    enemies: [
+      {x:0, y:0, math:"1", speed:2},
+    ],
+  }
+  let global = localStorage.getItem("global");
+  if(!global) {
+    global = initState;
+  } else {
+    global = JSON.parse(global);
+  }
 
-  let Draw = () => {
+  let p1 = global.p1;
+  let p2 = global.p2;
+  enemies = global.enemies;
+
+
+  // ---------------
+  // Gamepad
+  // ---------------
+  let gamepads = [];
+  window.addEventListener("gamepadconnected", e=>{
+    if (gamepads.length > 2) return;
+    console.log(
+      "Gamepad connected at index %d: %s. %d buttons, %d axes.",
+      e.gamepad.index,
+      e.gamepad.id,
+      e.gamepad.buttons.length,
+      e.gamepad.axes.length,
+    );
+    gamepads = gamepads.concat(navigator.getGamepads()[e.gamepad.index]);
+  });
+
+  // ---------------
+  // Game logic
+  // ---------------
+  function Draw() {
     let s = min(window.innerWidth, window.innerHeight); // s for Size
-    ctx.canvas.height = ctx.canvas.width  = s;
+    ctx.canvas.height = window.innerHeight;
+    ctx.canvas.width  = window.innerWidth;
 
-    if (p1.button['ArrowLeft' ]) {p1.x-=10;}
-    if (p1.button['ArrowRight']) {p1.x+=10;}
-    if (p1.button['ArrowUp'   ]) {p1.y-=10;}
-    if (p1.button['ArrowDown' ]) {p1.y+=10;}
+    // Player Movement
+    p1.x += speed*(!!button['ArrowRight']-!!button['ArrowLeft']);
+    p1.y += speed*(!!button['ArrowDown' ]-!!button['ArrowUp'  ]);
+
+    p2.x += speed*(!!button['d']-!!button['a']);
+    p2.y += speed*(!!button['s']-!!button['w']);
+
+    for(let i=0; i<2; i++){
+      let gamepad = gamepads[i];
+      if (gamepad) {
+        player = [p1, p2][i];
+        const sign1 = Math.sign(gamepad.axes[0]);
+        const sign2 = Math.sign(gamepad.axes[1]);
+        console.log(gamepad)
+        player.x += speed*sign1*Math.floor(Math.abs(gamepad.axes[0])*7)*(1/7)
+        player.y += speed*sign2*Math.floor(Math.abs(gamepad.axes[1])*7)*(1/7)
+      }
+    }
+
+    if (button['½']) {
+      global = initState;
+    }
+    // ----------
+    // Debug info
+    {
+      function f(o) {
+        for (let key in o) {
+          if("number" === typeof o[key]){
+            o[key] = Math.round(o[key]*10)/10;
+          } else if ("object" === typeof o[key]){
+            f(o[key])
+          }
+        }
+      }
+      const tempGlobal = global;
+      f(tempGlobal)
+
+      t = JSON.stringify(global, null, 0);
+      ctx.fillText(t, 0, myCanvas.height-20)
+      ctx.fillText(t.slice(45), 0, myCanvas.height-8)
+
+      //ctx.drawImage(imgIntroDesk, 40, 40);
+      //ctx.drawImage(imgLevelNotebook, 80, 80);
+
+    }
 
     ctx.moveTo(0, 0);
     ctx.lineTo(s, s);
@@ -43,32 +134,61 @@ Your browser does not support the HTML canvas tag.
     ctx.arc(s/2, s/2, s/2, 0, 2 * Math.PI);
     ctx.stroke();
 
-    ctx.beginPath();
-    ctx.arc(p1.x+s/2, p1.y+s/2, s/20, 0, 2 * Math.PI);
-    ctx.stroke();
-
     ctx.font = "50px Consolas"; // Sets text
-    ctx.fillText("Hellooo", 100, 100);
+    [p1, p2].forEach(p=>{
+      ctx.fillText("λ", p.x+s/2, p.y+s/2);
+      ctx.drawImage(imgHat2, -7+p.x+s/2, -60+p.y+s/2, 40, 40);
+    })
 
+
+    enemies.forEach(e=>{
+      // Movement logic
+      x1 = e.x;
+      y1 = e.y;
+
+      x2 = p1.x;
+      y2 = p1.y;
+
+      diffx = x1-x2;
+      diffy = y1-y2;
+      temp = Math.sqrt((diffx*diffx)+(diffy*diffy));
+
+      if (Math.abs(temp) > e.speed) {
+        unitVecX = diffx/temp;
+        unitVecY = diffy/temp;
+        e.x += -e.speed*unitVecX;
+        e.y += -e.speed*unitVecY;
+      }
+
+
+      // Draw enemies
+      ctx.fillText(e.math, e.x+s/2, e.y+s/2);
+
+    });
+
+    localStorage.setItem("global", JSON.stringify(global));
     requestAnimationFrame(Draw);
   }
-  let  e = nerdamer('x^2+2*(cos(x)+x*x)');
-  console.log(e.text());
-
+  requestAnimationFrame(Draw);
 
   document.onkeydown = function (e) {
     e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
-    p1.button[e.key] = true;
+    console.log(button);
+    button[e.key] = true;
   };
 
   document.onkeyup = function (e) {
     e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
-    p1.button[e.key] = false;
+    button[e.key] = false;
   };
 
+  // ---------------
+  // Experiments
+  // ---------------
+  let  e = nerdamer('iz*(cos(x)+x*x)');
+  console.log(e.text());
 
 
-  requestAnimationFrame(Draw);
 </script>
 
 </body>
