@@ -9,9 +9,8 @@ Your browser does not support the HTML canvas tag.
 
 <style>
   html, body {
-    width:  100%;
-    height: 100%;
     margin: 0;
+    overflow:hidden;
   }
 </style>
 
@@ -20,9 +19,21 @@ Your browser does not support the HTML canvas tag.
   let c = document.getElementById("myCanvas");
   let ctx = c.getContext("2d");
 
+  // State variables
+  p1 = {
+    x:1,
+    y:2,
+    button: {},
+  };
+
   let Draw = () => {
     let s = min(window.innerWidth, window.innerHeight); // s for Size
     ctx.canvas.height = ctx.canvas.width  = s;
+
+    if (p1.button['ArrowLeft' ]) {p1.x-=10;}
+    if (p1.button['ArrowRight']) {p1.x+=10;}
+    if (p1.button['ArrowUp'   ]) {p1.y-=10;}
+    if (p1.button['ArrowDown' ]) {p1.y+=10;}
 
     ctx.moveTo(0, 0);
     ctx.lineTo(s, s);
@@ -32,6 +43,10 @@ Your browser does not support the HTML canvas tag.
     ctx.arc(s/2, s/2, s/2, 0, 2 * Math.PI);
     ctx.stroke();
 
+    ctx.beginPath();
+    ctx.arc(p1.x+s/2, p1.y+s/2, s/20, 0, 2 * Math.PI);
+    ctx.stroke();
+
     ctx.font = "50px Consolas"; // Sets text
     ctx.fillText("Hellooo", 100, 100);
 
@@ -39,6 +54,20 @@ Your browser does not support the HTML canvas tag.
   }
   let  e = nerdamer('x^2+2*(cos(x)+x*x)');
   console.log(e.text());
+
+
+  document.onkeydown = function (e) {
+    e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
+    p1.button[e.key] = true;
+  };
+
+  document.onkeyup = function (e) {
+    e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
+    p1.button[e.key] = false;
+  };
+
+
+
   requestAnimationFrame(Draw);
 </script>
 
