@@ -11,7 +11,7 @@
     Your browser does not support the HTML canvas tag.
   </canvas>
   <div style="position:absolute">
-    <button type="button" >Click Me!</button>
+    <button type="button" onclick='console.log(123);localStorage.setItem("global", JSON.stringify(initState))'>Click Me!</button>
   </div>
 
 <style>
@@ -34,17 +34,21 @@
     }
     return p
   }
+  function dist(x1, y1, x2, y2) {
+    return Math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
+  }
 
   let startTime = Date.now()/1000
 
   let c = document.getElementById("myCanvas");
   let ctx = c.getContext("2d");
   let speed = 4
+  let pickupDistance = 500;
   let button = {}
-  let shootCooldown = 1;
+  let actionCooldown = 1;
 
   ctx.font = "50px Consolas"; // Sets text
-  let wepons = [
+  let weapons = [
     {from: "+1"  , math:"+1", apply: x => '('+x+')+1'  },
     {from: "-1"  , math:"-1", apply: x => '('+x+')-1'  },
     {from: "sqrt", math:"²√", apply: x => 'sqrt('+x+')'},
@@ -58,19 +62,22 @@
     p1: {
       x:1,y:2,
       dirX:1,dirY:0,
-      timeAtLastShooting:-Infinity,
-      equiped: null,
+      timeAtLastAction:-Infinity,
+      weapon: null,
     },
     p2: {
       x:1,y:2,
       dirX:1,dirY:0,
-      timeAtLastShooting:-Infinity,
-      equiped: null,
+      timeAtLastAction:-Infinity,
+      weapon: null,
     },
     enemies: [
       {x:20, y:0, math: "1", speed:2},
     ],
-    bullets: []
+    bullets: [],
+    pickups: [
+      {x: 10, y: 50, weapon: {from: "sqrt", math:"²√", apply: x => 'sqrt('+x+')'}}
+    ],
   }
   isIntro = false;
   let global = localStorage.getItem("global");
@@ -86,10 +93,7 @@
   let p2 = global.p2;
   let enemies = global.enemies;
   let bullets = global.bullets;
-
-  // TEST STUFF!!!!
-  p1.equiped = wepons[1]
-  p2.equiped = wepons[1]
+  let pickups = global.pickups;
 
   // ---------------
   // Gamepad
@@ -145,6 +149,18 @@
       return;
     }
 
+    pickups.forEach(b=>{
+      ctx.beginPath();
+      ctx.arc(b.x+s/2, b.y+s/2, 20, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      if (b.weapon){
+        ctx.font = "20px Consolas"; // Sets text
+        ctx.fillText(b.weapon.math, b.x+(s-25)/2, b.y+(s+15)/2)
+        ctx.font = "50px Consolas"; // Sets text
+      }
+    })
+
 
     // --------------- //
     // Player Movement //
@@ -169,22 +185,30 @@
     p2.x += speed*p2.dirX;
     p2.y += speed*p2.dirY;
 
+    let swapWeaponPlayer = [false, false];
 
     // Shoot logic
-    if (p1.equiped && button[' '] && shootCooldown < timestamp-p1.timeAtLastShooting){
-      p1.timeAtLastShooting = timestamp;
+    if (p1.weapon && button[' '] && actionCooldown < timestamp-p1.timeAtLastAction){
+      p1.timeAtLastAction = timestamp;
 
-      bullets = bullets.concat({x:p1.x, y:p1.y, dirX:p1.dirX, dirY:p1.dirY, math:p1.equiped});
+      bullets = bullets.concat({x:p1.x, y:p1.y, dirX:p1.dirX, dirY:p1.dirY, math:p1.weapon});
 
     }
-    if (p2.equiped && button['Enter'] && shootCooldown < timestamp-p2.timeAtLastShooting) {
-      p2.timeAtLastShooting = timestamp;
+    if (p2.weapon && button['Enter'] && actionCooldown < timestamp-p2.timeAtLastAction) {
+      p2.timeAtLastAction = timestamp;
 
-      bullets = bullets.concat({x:p2.x, y:p2.y, dirX:p2.dirX, dirY:p2.dirY, math:p2.equiped});
+      bullets = bullets.concat({x:p2.x, y:p2.y, dirX:p2.dirX, dirY:p2.dirY, math:p2.weapon});
     }
 
-    //e.math = nerdamer(p1.equiped.apply(e.math.toString()));
-    //e.math = nerdamer(p2.equiped.apply(e.math.toString()));
+    if (button['q']) {
+      swapWeaponPlayer[0] = true;
+    }
+    if (button['p']) {
+      swapWeaponPlayer[1] = true;
+    }
+
+    //e.math = nerdamer(p1.weapon.apply(e.math.toString()));
+    //e.math = nerdamer(p2.weapon.apply(e.math.toString()));
 
 
     // ------------- //
@@ -199,8 +223,33 @@
 
         player.x += speed*sign1*Math.floor(Math.abs(gamepad.axes[0])*7)*(1/7)
         player.y += speed*sign2*Math.floor(Math.abs(gamepad.axes[1])*7)*(1/7)
+
+        swapWeaponPlayer[i] = gamepad.buttons[0].pressed || gamepad.buttons[1].pressed || gamepad.buttons[2].pressed || gamepad.buttons[3].pressed
       }
+
+      for (let i = 0; i < swapWeaponPlayer.length; i++) {
+        const element = swapWeaponPlayer[i];
+        player = [p1, p2][i];
+
+        if(!element){
+          continue;
+        }
+
+        pickups.forEach(p => {
+          const distance = dist(p.x, p.y, player.x, player.y)
+          console.log(distance);
+          if (actionCooldown < timestamp-player.timeAtLastAction && distance < pickupDistance) {
+            player.timeAtLastAction = timestamp;
+            console.log(p);
+            [p.weapon, player.weapon] = [player.weapon, p.weapon];
+            console.log(p);
+          }
+        });
+      }
+
+
     }
+
 
     if (button['½']) {
       isIntro = true;
