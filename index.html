@@ -90,18 +90,15 @@
         { x: 2000, y: 1600, math: "10", speed: 1 },
         { x: 2200, y: 1700, math: "8", speed: 1 },
         { x: 3200, y: 2700, math: "2i+2", speed: 1 },
-        { x: 2200, y: 2700, math: "2%5", speed: 1 },
  { x: 4000, y: 600, math: "-3", speed: 1 },
         { x: 4000, y: 1600, math: "5", speed: 1 },
         { x: 4000, y: 2600, math: "5+5", speed: 1 },
         { x: 4500, y: 2700, math: "8", speed: 1 },
-        { x: 4250, y: 2700, math: "2%5", speed: 1 },
  { x: 8000, y: 600, math: "-3", speed: 1 },
         { x: 8000, y: 1600, math: "90", speed: 1 },
         { x: 9000, y: 1600, math: "10", speed: 1 },
         { x: 10200, y: 1700, math: "8", speed: 1 },
         { x: 12200, y: 2700, math: "2i+2", speed: 1 },
-        { x: 15200, y: 2700, math: "2%5", speed: 1 },
     ],
       bullets: [],
       pickups: [
@@ -316,7 +313,6 @@
       [p1, p2].forEach(p => {
         ctx.drawImage(imgHat, -7 + p.x + sx / 2, -60 + p.y + sy / 2, 40, 40);
       })
-
       global.enemies = global.enemies.filter(e => {
           // Movement logic
 
@@ -341,14 +337,23 @@
           e.y += -e.speed * v[1]
 
           if (minB<min) { // incase of bullet
-            console.log("hello");
             creek = 40;
             if (e.x - creek < B.x && e.x + creek > B.x &&
               e.y - creek < B.y && e.y + creek > B.y
             ) {
-              console.log(B.math.weapon);
-              let o = B.math.weapon.apply(e.math)
+              console.log(B);
+              let x = B.math.weapon.from;
+              console.log(B.math.weapon.from);
+              let o = "1";
+              console.log(x)
+              if (x=="+1"){o=plus.apply(e.math)}
+              else if (x=="-1"){o=minus.apply(e.math);}
+              else if (x=="sqrt"){o=sqrt.apply(e.math);}
+              else if (x=="^2"){o=square.apply(e.math);}
+              else {return true};
+              console.log(e)
               e.math = nerdamer(o).toString()
+              console.log(e)
               return e.math!=="0";
             }
             return true;
