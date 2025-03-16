@@ -1,6 +1,7 @@
 <!DOCTYPE html>
-<script src="./nerdamer/all.min.js"></script>  <!-- assuming you've saved the file in the root -->
+<script src="./nerdamer/all.min.js"></script> <!-- assuming you've saved the file in the root -->
 <html>
+
 <body>
   <img id="imgHat" style="display: none" src="hat.png">
   <img id="imgIntroDesk" style="display: none" src="intro-desk.png">
@@ -13,367 +14,404 @@
     <button type="button" onclick='localStorage.setItem("global", JSON.stringify(initState))'>Click Me!</button>
   </div>
 
-<style>
-  html, body {
-    margin: 0;
-    overflow:hidden;
-  }
-</style>
-
-<script>
-  // Reset backup:
-  //localStorage.setItem("global", JSON.stringify(initState))
-  function min(a,b){return a>b?b:a;}
-  function toUnit(x,y, xn,yn, distFrom0) { // Point 1, and point 2
-    const temp = Math.sqrt(x*x+y*y);
-    p=[xn,yn];
-    if (Math.abs(temp) > distFrom0) {
-      p[0] = x/temp;
-      p[1] = y/temp;
+  <style>
+    html,
+    body {
+      margin: 0;
+      overflow: hidden;
     }
-    return p
-  }
-  function dist(x1, y1, x2, y2) {
-    return Math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
-  }
+  </style>
 
-  let c = document.getElementById("myCanvas");
-  let ctx = c.getContext("2d");
-  let speed = 4
-  let button = {}
-  let actionCooldown = 1;
-
-  ctx.font = "50px Consolas"; // Sets text
-  let weapons = [
-    {from: "+1"  , math:"+1", apply: x => '('+x+')+1'  },
-    {from: "-1"  , math:"-1", apply: x => '('+x+')-1'  },
-    {from: "sqrt", math:"²√", apply: x => 'sqrt('+x+')'},
-    {from: "^2"  , math:"²" , apply: x => '('+x+')^2'  },
-  ]
-
-  // ---------------
-  // State variables
-  // ---------------
-  let initState = {
-    startTime: Date.now()/1000,
-    p1: {
-      x:1,y:2,
-      dirX:1,dirY:0,
-      timeAtLastAction:-Infinity,
-      weapon: null,
-      lives:3,
-    },
-    p2: {
-      x:1,y:2,
-      dirX:1,dirY:0,
-      timeAtLastAction:-Infinity,
-      weapon: null,
-      lives:3,
-    },
-    enemies: [
-      {x:200, y:0, math: "1", speed:2},
-    ],
-    bullets: [],
-    pickups: [
-      {x: 10, y: 50, weapon: {from: "sqrt", math:"²√", apply: x => 'sqrt('+x+')'}}
-    ],
-  }
-  isIntro = false;
-  let global = localStorage.getItem("global");
-  if(!global) {
-    isIntro = true;
-    global = initState;
-  } else {
-    isIntro = false;
-    global = JSON.parse(global);
-  }
-
-  let p1 = global.p1;
-  let p2 = global.p2;
-  let bullets = global.bullets;
-  let pickups = global.pickups;
-
-  // ---------------
-  // Gamepad
-  // ---------------
-  let gamepads = [];
-  window.addEventListener("gamepadconnected", e=>{
-    if (gamepads.length > 2) return;
-    console.log(
-      "Gamepad connected at index %d: %s. %d buttons, %d axes.",
-      e.gamepad.index,
-      e.gamepad.id,
-      e.gamepad.buttons.length,
-      e.gamepad.axes.length,
-    );
-    gamepads = gamepads.concat(navigator.getGamepads()[e.gamepad.index]);
-  });
-
-  // ---------------
-  // Game logic
-  // ---------------
-  function Draw() {
-    const timestamp = Date.now()/1000
-    let sx = window.innerWidth; // s for Size
-    let sy = window.innerHeight; // s for Size
-    let s = min(sx, sy); // s for Size
-    let pickupDistance = 0.3*s/2;
-    ctx.canvas.height = window.innerHeight;
-    ctx.canvas.width  = window.innerWidth;
-
-    // --------------- //
-    // Environment     //
-    // --------------- //
-    scale = 8*Math.min((timestamp-global.startTime)/4,1)
-    eyeX = 1150
-    eyeY = 380
-
-    ctx.drawImage(imgIntroDesk,
-
-      // scale the eyeX offset by the scaling factor
-      // and then push the image horizontally to center canvas
-      -eyeX*scale + sx/2,
-
-      // scale the eyeY offset by the scaling factor
-      // and then push the image vertically to center canvas
-      -eyeY*scale + sy/2,
-
-      // scale whole image by the scaling factor
-      sx*scale,
-      sy*scale
-    );
-    eyeX = -60 //640
-    eyeY = -65 //768
-    console.log(sy/2) // ~200
-    ctx.drawImage(imgLevelNotebook, eyeX*scale+sx/2, eyeY*scale+sy/2, s*scale*0.20, s*scale*0.20);
-    if (isIntro){
-      isIntro = global.startTime+4 > timestamp;
-      requestAnimationFrame(Draw);
-      return;
-    }
-
-    pickups.forEach(b=>{
-      ctx.beginPath();
-      ctx.arc(b.x+sx/2, b.y+sy/2, 20, 0, 2 * Math.PI);
-      ctx.stroke();
-
-      if (b.weapon){
-        ctx.font = "20px Consolas"; // Sets text
-        ctx.fillText(b.weapon.math, b.x+(sx-25)/2, b.y+(sy+15)/2)
-        ctx.font = "50px Consolas"; // Sets text
+  <script>
+    // Reset backup:
+    //localStorage.setItem("global", JSON.stringify(initState))
+    function min(a, b) { return a > b ? b : a; }
+    function toUnit(x, y, xn, yn, distFrom0) { // Point 1, and point 2
+      const temp = Math.sqrt(x * x + y * y);
+      p = [xn, yn];
+      if (Math.abs(temp) > distFrom0) {
+        p[0] = x / temp;
+        p[1] = y / temp;
       }
-    })
-
-
-    // --------------- //
-    // Player Movement //
-    // --------------- //
-    let tempDirX = !!button['ArrowRight']-!!button['ArrowLeft'];
-    let tempDirY = !!button['ArrowDown' ]-!!button['ArrowUp'  ];
-    if (tempDirX || tempDirY) {
-      [p1.dirX, p1.dirY] = toUnit(tempDirX, tempDirY, 0, 0, 0)
+      return p
     }
-    p1.x += speed*tempDirX;
-    p1.y += speed*tempDirY;
-
-    tempDirX = !!button['d']-!!button['a']
-    tempDirY = !!button['s']-!!button['w']
-    if (tempDirX || tempDirY) {
-      [p2.dirX,p2.dirY] = toUnit(tempDirX, tempDirY, 0, 0, 0)
-    }
-    p2.x += speed*tempDirX;
-    p2.y += speed*tempDirY;
-
-    let swapWeaponPlayer = [false, false];
-
-    // Shoot logic
-    if (p1.weapon && button['Enter'] && actionCooldown < timestamp-p1.timeAtLastAction){
-      p1.timeAtLastAction = timestamp;
-
-      bullets = bullets.concat({x:p1.x, y:p1.y, dirX:p1.dirX, dirY:p1.dirY, math:p1.weapon});
-    }
-    if (p2.weapon && button[' '] && actionCooldown < timestamp-p2.timeAtLastAction) {
-      p2.timeAtLastAction = timestamp;
-
-      bullets = bullets.concat({x:p2.x, y:p2.y, dirX:p2.dirX, dirY:p2.dirY, math:p2.weapon});
+    function dist(x1, y1, x2, y2) {
+      return Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
     }
 
-    if (button['p']) {
-      swapWeaponPlayer[0] = true;
-    }
-    if (button['q']) {
-      swapWeaponPlayer[1] = true;
-    }
-
-    //e.math = nerdamer(p1.weapon.apply(e.math.toString()));
-    //e.math = nerdamer(p2.weapon.apply(e.math.toString()));
-
-
-    // ------------- //
-    // Gamepad stuff //
-    // ------------- //
-    for(let i=0; i<2; i++){
-      let gamepad = gamepads[i];
-      if (gamepad) {
-        player = [p1, p2][i];
-        const sign1 = Math.sign(gamepad.axes[0]);
-        const sign2 = Math.sign(gamepad.axes[1]);
-
-        player.x += speed*sign1*Math.floor(Math.abs(gamepad.axes[0])*7)*(1/7)
-        player.y += speed*sign2*Math.floor(Math.abs(gamepad.axes[1])*7)*(1/7)
-
-        swapWeaponPlayer[i] = gamepad.buttons[0].pressed || gamepad.buttons[1].pressed
-
-
-        if (player.weapon && (gamepad.buttons[2].pressed ||  gamepad.buttons[3].pressed) && actionCooldown < timestamp-player.timeAtLastAction) {
-          player.timeAtLastAction = timestamp;
-
-          bullets = bullets.concat({x:player.x, y:player.y, dirX:player.dirX, dirY:player.dirY, math:player.weapon});
-        }
-      }
-
-      for (let i = 0; i < swapWeaponPlayer.length; i++) {
-        const element = swapWeaponPlayer[i];
-        player = [p1, p2][i];
-
-        if(!element){
-          continue;
-        }
-
-        pickups.forEach(p => {
-          const distance = dist(p.x, p.y, player.x, player.y)
-          if (actionCooldown < timestamp-player.timeAtLastAction && distance < pickupDistance) {
-            player.timeAtLastAction = timestamp;
-            [p.weapon, player.weapon] = [player.weapon, p.weapon];
-          }
-        });
-      }
-
-
-    }
-
-
-    if (button['½']) {
-      isIntro = true;
-      global.startTime = Date.now()/1000;
-      global = initState;
-    }
-    // ----------
-    // Debug info
-    {
-      function f(o) {
-        for (let key in o) {
-          if("number" === typeof o[key]){
-            o[key] = Math.round(o[key]*10)/10;
-          } else if ("object" === typeof o[key]){
-            f(o[key])
-          }
-        }
-      }
-      const tempGlobal = global;
-      f(tempGlobal)
-
-      t = JSON.stringify(global, null, 0);
-
-      ctx.font = "11px Consolas"; // Sets tex
-      ctx.fillText(t, 0, myCanvas.height-20)
-      ctx.fillText(t.slice(45), 0, myCanvas.height-8)
-    }
-
+    let c = document.getElementById("myCanvas");
+    let ctx = c.getContext("2d");
+    let speed = 4
+    let button = {}
+    let actionCooldown = 1;
 
     ctx.font = "50px Consolas"; // Sets text
 
+    const plus = { from: "+1", math: "+1", apply: x => '(' + x + ')+1' }
+    const minus = { from: "-1", math: "-1", apply: x => '(' + x + ')-1' }
+    const sqrt = { from: "sqrt", math: "²√", apply: x => 'sqrt(' + x + ')' }
+    const square = { from: "^2", math: "²", apply: x => '(' + x + ')^2' }
 
-    ctx.fillText("λ", p1.x+sx/2, p1.y+sy/2);
-    ctx.fillText("β", p2.x+sx/2, p2.y+sy/2);
 
-    [p1, p2].forEach(p=>{
-      ctx.drawImage(imgHat, -7+p.x+sx/2, -60+p.y+sy/2, 40, 40);
-    })
+    let weapons = [
+      plus,
+      minus,
+      sqrt,
+      square,
+    ]
 
-    global.enemies = global.enemies.filter(e=>{
-      // Movement logic
-      const v = toUnit(e.x-p1.x, e.y-p1.y, 0, 0, e.speed)
-      e.x += -e.speed*v[0]
-      e.y += -e.speed*v[1]
-
-      // Draw enemies
-      ctx.fillText(e.math, e.x+sx/2, e.y+sy/2);
-
-      for (let i = 0; i < 2; i++) {
-        player = [p1, p2][i];
-        if (e.x-speed < player.x && e.x+speed > player.x &&
-            e.y-speed < player.y && e.y+speed > player.y
-        ){
-          player.lives-=1;
-          return false;
-        }
-      }
-      return true;
-    });
-
-    bullets.forEach(b=>{
-      console.log(b.dirX, b.dirY);
-      ctx.font = "20px Consolas"; // Sets text
-      ctx.fillText(b.math.math.toString(), b.x+sx/2, b.y+sy/2)
-      ctx.font = "50px Consolas"; // Sets text
-    })
-
-    h = w = 78
-
-    for(let i=0; i<2; i++){
-      const player = [p1, p2][i]
-      x = [20, sx-w-20][i]
-      ctx.beginPath();
-      ctx.font = "23px Consolas"; // Sets text
-      ctx.fillStyle = "lightgrey";
-      ctx.fillRect(x, 20, w, h);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.lineWidth = "4";
-      ctx.strokeStyle = ["blue", "green"][i];
-      ctx.rect(x, 20, w, h);
-      ctx.stroke();
-
-      ctx.beginPath();
-      ctx.fillStyle = "red";
-      if (player.lives>=1) ctx.fillText('♥︎', x, 41);
-      if (player.lives>=2) ctx.fillText('♥︎', x+20, 41);
-      if (player.lives>=3) ctx.fillText('♥︎', x+40, 41);
-      ctx.stroke();
-
-      if (player.weapon){
-        ctx.beginPath();
-        ctx.fillStyle = "black";
-        ctx.fillText(player.weapon.math, x+10, 80)
-        ctx.stroke();
-      }
+    // ---------------
+    // State variables
+    // ---------------
+    let initState = {
+      startTime: Date.now() / 1000,
+      p1: {
+        x: 1, y: 2,
+        dirX: 1, dirY: 0,
+        timeAtLastAction: -Infinity,
+        weapon: null,
+        lives: 3,
+      },
+      p2: {
+        x: 1, y: 2,
+        dirX: 1, dirY: 0,
+        timeAtLastAction: -Infinity,
+        weapon: null,
+        lives: 3,
+      },
+      enemies: [
+        { x: -200, y: 100, math: "√3+2", speed: 1 },
+        { x: 200, y: 0, math: "1", speed: 1 },
+      ],
+      bullets: [],
+      pickups: [
+        { x: 140, y: 50, weapon: sqrt },
+        { x: -120, y: -100, weapon: plus },
+      ],
+    }
+    isIntro = false;
+    let global = localStorage.getItem("global");
+    if (!global) {
+      isIntro = true;
+      global = initState;
+    } else {
+      isIntro = false;
+      global = JSON.parse(global);
     }
 
-    localStorage.setItem("global", JSON.stringify(global));
+    let p1 = global.p1;
+    let p2 = global.p2;
+    let pickups = global.pickups;
+
+    // ---------------
+    // Gamepad
+    // ---------------
+    let gamepads = [];
+    window.addEventListener("gamepadconnected", e => {
+      if (gamepads.length > 2) return;
+      console.log(
+        "Gamepad connected at index %d: %s. %d buttons, %d axes.",
+        e.gamepad.index,
+        e.gamepad.id,
+        e.gamepad.buttons.length,
+        e.gamepad.axes.length,
+      );
+      gamepads = gamepads.concat(navigator.getGamepads()[e.gamepad.index]);
+    });
+
+    // ---------------
+    // Game logic
+    // ---------------
+    function Draw() {
+      const timestamp = Date.now() / 1000
+      let sx = window.innerWidth; // s for Size
+      let sy = window.innerHeight; // s for Size
+      let s = min(sx, sy); // s for Size
+      let pickupDistance = 0.3 * s / 2;
+      ctx.canvas.height = window.innerHeight;
+      ctx.canvas.width = window.innerWidth;
+
+      // --------------- //
+      // Environment     //
+      // --------------- //
+      scale = 5 * Math.min((timestamp - global.startTime) / 4, 1)
+      eyeX = 1150
+      eyeY = 480
+
+      ctx.drawImage(imgIntroDesk,
+
+        // scale the eyeX offset by the scaling factor
+        // and then push the image horizontally to center canvas
+        -eyeX * scale + sx / 2,
+
+        // scale the eyeY offset by the scaling factor
+        // and then push the image vertically to center canvas
+        -eyeY * scale + sy / 2,
+
+        // scale whole image by the scaling factor
+        sx * scale,
+        sy * scale
+      );
+      eyeX = -90 //640
+      eyeY = -93 //768
+      ctx.drawImage(imgLevelNotebook, eyeX * scale + sx / 2, eyeY * scale + sy / 2, s * scale * 0.20, s * scale * 0.20);
+      if (isIntro) {
+        isIntro = global.startTime + 4 > timestamp;
+        requestAnimationFrame(Draw);
+        return;
+      }
+
+      pickups.forEach(b => {
+        ctx.beginPath();
+        ctx.arc(b.x + sx / 2, b.y + sy / 2, 20, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        if (b.weapon) {
+          ctx.font = "20px Consolas"; // Sets text
+          ctx.fillText(b.weapon.math, b.x + (sx - 25) / 2, b.y + (sy + 15) / 2);
+          ctx.font = "50px Consolas"; // Sets text
+        }
+      })
+
+
+      // --------------- //
+      // Player Movement //
+      // --------------- //
+      let tempDirX = !!button['ArrowRight'] - !!button['ArrowLeft'];
+      let tempDirY = !!button['ArrowDown'] - !!button['ArrowUp'];
+      if (tempDirX || tempDirY) {
+        [p1.dirX, p1.dirY] = toUnit(tempDirX, tempDirY, 0, 0, 0)
+      }
+      p1.x += speed * tempDirX;
+      p1.y += speed * tempDirY;
+
+      tempDirX = !!button['d'] - !!button['a']
+      tempDirY = !!button['s'] - !!button['w']
+      if (tempDirX || tempDirY) {
+        [p2.dirX, p2.dirY] = toUnit(tempDirX, tempDirY, 0, 0, 0)
+      }
+      p2.x += speed * tempDirX;
+      p2.y += speed * tempDirY;
+
+      let swapWeaponPlayer = [false, false];
+
+      // Shoot logic
+      if (p1.weapon && button['Enter'] && actionCooldown < timestamp - p1.timeAtLastAction) {
+        p1.timeAtLastAction = timestamp;
+
+        global.bullets = global.bullets.concat({ x: p1.x, y: p1.y, dirX: p1.dirX, dirY: p1.dirY, math: p1.weapon });
+      }
+      if (p2.weapon && button[' '] && actionCooldown < timestamp - p2.timeAtLastAction) {
+        p2.timeAtLastAction = timestamp;
+
+        global.bullets = global.bullets.concat({ x: p2.x, y: p2.y, dirX: p2.dirX, dirY: p2.dirY, math: p2.weapon });
+      }
+
+      if (button['p']) {
+        swapWeaponPlayer[0] = true;
+      }
+      if (button['q']) {
+        swapWeaponPlayer[1] = true;
+      }
+
+      //e.math = nerdamer(p1.weapon.apply(e.math.toString()));
+      //e.math = nerdamer(p2.weapon.apply(e.math.toString()));
+
+
+      // ------------- //
+      // Gamepad stuff //
+      // ------------- //
+      for (let i = 0; i < 2; i++) {
+        let gamepad = gamepads[i];
+        if (gamepad) {
+          player = [p1, p2][i];
+          const sign1 = Math.sign(gamepad.axes[0]);
+          const sign2 = Math.sign(gamepad.axes[1]);
+
+          player.x += speed * sign1 * Math.floor(Math.abs(gamepad.axes[0]) * 7) * (1 / 7)
+          player.y += speed * sign2 * Math.floor(Math.abs(gamepad.axes[1]) * 7) * (1 / 7)
+
+          swapWeaponPlayer[i] = gamepad.buttons[0].pressed || gamepad.buttons[1].pressed
+
+
+          if (player.weapon && (gamepad.buttons[2].pressed || gamepad.buttons[3].pressed) && actionCooldown < timestamp - player.timeAtLastAction) {
+            player.timeAtLastAction = timestamp;
+
+            global.bullets = global.bullets.concat({ x: player.x, y: player.y, dirX: player.dirX, dirY: player.dirY, math: player.weapon });
+          }
+        }
+
+        for (let i = 0; i < swapWeaponPlayer.length; i++) {
+          const element = swapWeaponPlayer[i];
+          player = [p1, p2][i];
+
+          if (!element) {
+            continue;
+          }
+
+          pickups.forEach(p => {
+            const distance = dist(p.x, p.y, player.x, player.y);
+            if (actionCooldown < timestamp - player.timeAtLastAction && distance < pickupDistance) {
+              player.timeAtLastAction = timestamp;
+              [p.weapon, player.weapon] = [player.weapon, p.weapon];
+            }
+          });
+        }
+
+
+      }
+
+
+      if (button['½']) {
+        isIntro = true;
+        global.startTime = Date.now() / 1000;
+        global = initState;
+      }
+      // ----------
+      // Debug info
+      {
+        function f(o) {
+          for (let key in o) {
+            if ("number" === typeof o[key]) {
+              o[key] = Math.round(o[key] * 10) / 10;
+            } else if ("object" === typeof o[key]) {
+              f(o[key])
+            }
+          }
+        }
+        const tempGlobal = global;
+        f(tempGlobal)
+
+        t = JSON.stringify(global, null, 0);
+
+        ctx.font = "11px Consolas"; // Sets tex
+        ctx.fillText(t, 0, myCanvas.height - 20)
+        ctx.fillText(t.slice(45), 0, myCanvas.height - 8)
+      }
+
+
+      ctx.font = "50px Consolas"; // Sets text
+
+
+      ctx.fillText("λ", p1.x + sx / 2, p1.y + sy / 2);
+      ctx.fillText("β", p2.x + sx / 2, p2.y + sy / 2);
+
+      [p1, p2].forEach(p => {
+        ctx.drawImage(imgHat, -7 + p.x + sx / 2, -60 + p.y + sy / 2, 40, 40);
+      })
+
+      global.enemies = global.enemies.filter(e => {
+          // Movement logic
+
+          let i = 0;
+          let min = Infinity;
+          let minI = 0;
+          let iB = 0;
+          let minB = Infinity;
+          let minIB = 0;
+          players = [p1, p2];
+          bullets = global.bullets;
+          players.forEach(p => { d = dist(p.x, p.y, e.x, e.y); if (d < min) { minI = i; min = d; }; i++ })
+          bullets.forEach(p => { d = dist(p.x, p.y, e.x, e.y); if (d < minB) { minIB = iB; minB = d; }; iB++ })
+          let p = players[minI];
+          let B = bullets[minIB];
+
+          // Draw enemies
+          const v = toUnit(e.x - p.x, e.y - p.y, 0, 0, e.speed);
+          ctx.fillText(e.math, e.x + sx / 2, e.y + sy / 2);
+          //incase of player
+          e.x += -e.speed * v[0]
+          e.y += -e.speed * v[1]
+
+          console.log(min,minB);
+          if (minB<min) { // incase of bullet
+            console.log("hello");
+            creek = 40;
+            if (e.x - creek < B.x && e.x + creek > B.x &&
+              e.y - creek < B.y && e.y + creek > B.y
+            ) {
+              console.log("Worked");
+              return false;
+            }
+            return true;
+          } else {
+            if (e.x - speed < p.x && e.x + speed > p.x &&
+              e.y - speed < p.y && e.y + speed > p.y
+            ) {
+              player.lives -= 1;
+              return false;
+            }
+            return true;
+          }
+        }
+      )
+
+      global.bullets.forEach(b => {
+        //      console.log(b)
+        b.x += speed * 2 * b.dirX;
+        b.y += speed * 2 * b.dirY;
+
+        ctx.font = "20px Consolas"; // Sets text
+        ctx.fillText(b.math.math.toString(), b.x + sx / 2, b.y + sy / 2)
+        ctx.font = "50px Consolas"; // Sets text
+      })
+
+      h = w = 78
+
+      for (let i = 0; i < 2; i++) {
+        const player = [p1, p2][i]
+        x = [20, sx - w - 20][i]
+        ctx.beginPath();
+        ctx.font = "23px Consolas"; // Sets text
+        ctx.fillStyle = "lightgrey";
+        ctx.fillRect(x, 20, w, h);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.lineWidth = "4";
+        ctx.strokeStyle = ["blue", "green"][i];
+        ctx.rect(x, 20, w, h);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.fillStyle = "red";
+        if (player.lives >= 1) ctx.fillText('♥︎', x, 41);
+        if (player.lives >= 2) ctx.fillText('♥︎', x + 20, 41);
+        if (player.lives >= 3) ctx.fillText('♥︎', x + 40, 41);
+        ctx.stroke();
+
+        if (player.weapon) {
+          ctx.beginPath();
+          ctx.fillStyle = "black";
+          ctx.fillText(player.weapon.math, x + 10, 80)
+          ctx.stroke();
+        }
+      }
+
+      localStorage.setItem("global", JSON.stringify(global));
+      requestAnimationFrame(Draw);
+    }
     requestAnimationFrame(Draw);
-  }
-  requestAnimationFrame(Draw);
 
-  document.onkeydown = function (e) {
-    e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
-    button[e.key] = true;
-  };
+    document.onkeydown = function (e) {
+      e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
+      button[e.key] = true;
+    };
 
-  document.onkeyup = function (e) {
-    e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
-    button[e.key] = false;
-  };
+    document.onkeyup = function (e) {
+      e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
+      button[e.key] = false;
+    };
 
-  // ---------------
-  // Experiments
-  // ---------------
-  // let e = nerdamer('iz*(cos(x)+x*x)');
-  // console.log(e.text());
+    // ---------------
+    // Experiments
+    // ---------------
+    // let e = nerdamer('iz*(cos(x)+x*x)');
+    // console.log(e.text());
 
 
-</script>
+  </script>
 
 </body>
+
 </html>
