@@ -91,7 +91,6 @@
 
   let p1 = global.p1;
   let p2 = global.p2;
-  let enemies = global.enemies;
   let bullets = global.bullets;
   let pickups = global.pickups;
 
@@ -308,7 +307,8 @@
       ctx.drawImage(imgHat2, -7+p.x+s/2, -60+p.y+s/2, 40, 40);
     })
 
-    enemies = enemies.filter(e=>{
+    console.log(global.enemies);
+    global.enemies = global.enemies.filter(e=>{
       // Movement logic
       const v = toUnit(e.x-p1.x, e.y-p1.y, 0, 0, e.speed)
       e.x += -e.speed*v[0]
