@@ -24,12 +24,23 @@
 <script>
   // Reset backup:
   //localStorage.setItem("global", JSON.stringify(initState))
-  let min = (a,b)=>a>b?b:a;
+  function min(a,b){return a>b?b:a;}
+  function toUnit(x,y, xn,yn, distFrom0) { // Point 1, and point 2
+    const temp = Math.sqrt(x*x+y*y);
+    p=[xn,yn];
+    if (Math.abs(temp) > distFrom0) {
+      p[0] = x/temp;
+      p[1] = y/temp;
+    }
+    return p
+  }
+
   let c = document.getElementById("myCanvas");
   let ctx = c.getContext("2d");
   let speed = 4
   let button = {}
   let shootCooldown = 1;
+  ctx.font = "50px Consolas"; // Sets text
   let wepons = [
     {from: "+1"  , math:"+1", apply: x => '('+x+')+1'  },
     {from: "-1"  , math:"-1", apply: x => '('+x+')-1'  },
@@ -43,13 +54,13 @@
   let initState = {
     p1: {
       x:1,y:2,
-      dirX:1,diry:0,
+      dirX:1,dirY:0,
       timeAtLastShooting:-Infinity,
       equiped: null,
     },
     p2: {
       x:1,y:2,
-      dirX:1,diry:0,
+      dirX:1,dirY:0,
       timeAtLastShooting:-Infinity,
       equiped: null,
     },
@@ -101,8 +112,14 @@
     // --------------- //
     // Player Movement //
     // --------------- //
-    p1.x += speed*(!!button['ArrowRight']-!!button['ArrowLeft']);
-    p1.y += speed*(!!button['ArrowDown' ]-!!button['ArrowUp'  ]);
+    p1.dirX = !!button['ArrowRight']-!!button['ArrowLeft'];
+    p1.dirY = !!button['ArrowDown' ]-!!button['ArrowUp'  ];
+    let v = toUnit(p1.dirX, p1.dirY, 0, 0, 0)
+    p1.dirX = v[0];
+    p1.dirY = v[1];
+
+    p1.x += speed*p1.dirX;
+    p1.y += speed*p1.dirY;
 
     p2.x += speed*(!!button['d']-!!button['a']);
     p2.y += speed*(!!button['s']-!!button['w']);
@@ -182,26 +199,11 @@
       ctx.drawImage(imgHat2, -7+p.x+s/2, -60+p.y+s/2, 40, 40);
     })
 
-
     enemies.forEach(e=>{
       // Movement logic
-      x1 = e.x;
-      y1 = e.y;
-
-      x2 = p1.x;
-      y2 = p1.y;
-
-      diffx = x1-x2;
-      diffy = y1-y2;
-      temp = Math.sqrt((diffx*diffx)+(diffy*diffy));
-
-      if (Math.abs(temp) > e.speed) {
-        unitVecX = diffx/temp;
-        unitVecY = diffy/temp;
-        e.x += -e.speed*unitVecX;
-        e.y += -e.speed*unitVecY;
-      }
-
+      const v = toUnit(e.x-p1.x, e.y-p1.y, 0, 0, e.speed)
+      e.x += -e.speed*v[0]
+      e.y += -e.speed*v[1]
 
       // Draw enemies
       ctx.fillText(e.math, e.x+s/2, e.y+s/2);
@@ -232,8 +234,8 @@
   // ---------------
   // Experiments
   // ---------------
-  let  e = nerdamer('iz*(cos(x)+x*x)');
-  console.log(e.text());
+  // let e = nerdamer('iz*(cos(x)+x*x)');
+  // console.log(e.text());
 
 
 </script>
