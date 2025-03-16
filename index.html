@@ -124,9 +124,9 @@
     // --------------- //
     // Environment     //
     // --------------- //
-    scale = 2*(Math.min(timestamp-global.startTime,4))
-    eyeX = 194
-    eyeY = 170
+    scale = 8*Math.min((timestamp-global.startTime)/4,1)
+    eyeX = 1150
+    eyeY = 380
 
     ctx.drawImage(imgIntroDesk,
 
@@ -142,9 +142,10 @@
       sx*scale,
       sy*scale
     );
-
-    ctx.drawImage(imgLevelNotebook, -(eyeX-170)*scale + sx/2, -(eyeY-140)*scale + sy/2, sx*scale*0.20, sy*scale*0.20);
-
+    eyeX = -60 //640
+    eyeY = -65 //768
+    console.log(sy/2) // ~200
+    ctx.drawImage(imgLevelNotebook, eyeX*scale+sx/2, eyeY*scale+sy/2, s*scale*0.20, s*scale*0.20);
     if (isIntro){
       isIntro = global.startTime+4 > timestamp;
       requestAnimationFrame(Draw);
@@ -277,10 +278,6 @@
       ctx.font = "11px Consolas"; // Sets tex
       ctx.fillText(t, 0, myCanvas.height-20)
       ctx.fillText(t.slice(45), 0, myCanvas.height-8)
-
-      //ctx.drawImage(imgIntroDesk, 40, 40);
-      //ctx.drawImage(imgLevelNotebook, 80, 80);
-
     }
 
 
