@@ -38,8 +38,6 @@
     return Math.sqrt((x1 - x2)**2 + (y1 - y2)**2)
   }
 
-  let startTime = Date.now()/1000
-
   let c = document.getElementById("myCanvas");
   let ctx = c.getContext("2d");
   let speed = 4
@@ -58,20 +56,23 @@
   // State variables
   // ---------------
   let initState = {
+    startTime: Date.now()/1000,
     p1: {
       x:1,y:2,
       dirX:1,dirY:0,
       timeAtLastAction:-Infinity,
       weapon: null,
+      lives:3,
     },
     p2: {
       x:1,y:2,
       dirX:1,dirY:0,
       timeAtLastAction:-Infinity,
       weapon: null,
+      lives:3,
     },
     enemies: [
-      {x:20, y:0, math: "1", speed:2},
+      {x:200, y:0, math: "1", speed:2},
     ],
     bullets: [],
     pickups: [
@@ -123,28 +124,29 @@
     // --------------- //
     // Environment     //
     // --------------- //
+    scale = 2*(Math.min(timestamp-global.startTime,4))
+    eyeX = 194
+    eyeY = 170
+
+    ctx.drawImage(imgIntroDesk,
+
+      // scale the eyeX offset by the scaling factor
+      // and then push the image horizontally to center canvas
+      -eyeX*scale + s/2,
+
+      // scale the eyeY offset by the scaling factor
+      // and then push the image vertically to center canvas
+      -eyeY*scale + s/2,
+
+      // scale whole image by the scaling factor
+      s*scale,
+      s*scale
+    );
+
+    ctx.drawImage(imgLevelNotebook, -(eyeX-170)*scale + s/2, -(eyeY-140)*scale + s/2, s*scale*0.20, s*scale*0.20);
+
     if (isIntro){
-      isIntro = startTime+4 > timestamp;
-      scale = 0.375*(timestamp-startTime)
-      eyeX = 200
-      eyeY = 170
-
-      ctx.drawImage(imgIntroDesk,
-
-        // scale the eyeX offset by the scaling factor
-        // and then push the image horizontally to center canvas
-        -eyeX*scale + s/2,
-
-        // scale the eyeY offset by the scaling factor
-        // and then push the image vertically to center canvas
-        -eyeY*scale + s/2,
-
-        // scale whole image by the scaling factor
-        s*scale,
-        s*scale
-      );
-
-      ctx.drawImage(imgLevelNotebook, -(eyeX-170)*scale + s/2, -(eyeY-140)*scale + s/2, s*scale*0.20, s*scale*0.20);
+      isIntro = global.startTime+4 > timestamp;
       requestAnimationFrame(Draw);
       return;
     }
@@ -188,22 +190,21 @@
     let swapWeaponPlayer = [false, false];
 
     // Shoot logic
-    if (p1.weapon && button[' '] && actionCooldown < timestamp-p1.timeAtLastAction){
+    if (p1.weapon && button['Enter'] && actionCooldown < timestamp-p1.timeAtLastAction){
       p1.timeAtLastAction = timestamp;
 
       bullets = bullets.concat({x:p1.x, y:p1.y, dirX:p1.dirX, dirY:p1.dirY, math:p1.weapon});
-
     }
-    if (p2.weapon && button['Enter'] && actionCooldown < timestamp-p2.timeAtLastAction) {
+    if (p2.weapon && button[' '] && actionCooldown < timestamp-p2.timeAtLastAction) {
       p2.timeAtLastAction = timestamp;
 
       bullets = bullets.concat({x:p2.x, y:p2.y, dirX:p2.dirX, dirY:p2.dirY, math:p2.weapon});
     }
 
-    if (button['q']) {
+    if (button['p']) {
       swapWeaponPlayer[0] = true;
     }
-    if (button['p']) {
+    if (button['q']) {
       swapWeaponPlayer[1] = true;
     }
 
@@ -224,7 +225,14 @@
         player.x += speed*sign1*Math.floor(Math.abs(gamepad.axes[0])*7)*(1/7)
         player.y += speed*sign2*Math.floor(Math.abs(gamepad.axes[1])*7)*(1/7)
 
-        swapWeaponPlayer[i] = gamepad.buttons[0].pressed || gamepad.buttons[1].pressed || gamepad.buttons[2].pressed || gamepad.buttons[3].pressed
+        swapWeaponPlayer[i] = gamepad.buttons[0].pressed || gamepad.buttons[1].pressed
+
+
+        if (player.weapon && (gamepad.buttons[2].pressed ||  gamepad.buttons[3].pressed) && actionCooldown < timestamp-player.timeAtLastAction) {
+          player.timeAtLastAction = timestamp;
+
+          bullets = bullets.concat({x:player.x, y:player.y, dirX:player.dirX, dirY:player.dirY, math:player.weapon});
+        }
       }
 
       for (let i = 0; i < swapWeaponPlayer.length; i++) {
@@ -253,7 +261,7 @@
 
     if (button['½']) {
       isIntro = true;
-      startTime = Date.now()/1000
+      global.startTime = Date.now()/1000;
       global = initState;
     }
     // ----------
@@ -272,6 +280,8 @@
       f(tempGlobal)
 
       t = JSON.stringify(global, null, 0);
+
+      ctx.font = "11px Consolas"; // Sets tex
       ctx.fillText(t, 0, myCanvas.height-20)
       ctx.fillText(t.slice(45), 0, myCanvas.height-8)
 
@@ -289,12 +299,16 @@
     ctx.stroke();
 
     ctx.font = "50px Consolas"; // Sets text
+
+
+    ctx.fillText("λ", p1.x+s/2, p1.y+s/2);
+    ctx.fillText("β", p2.x+s/2, p2.y+s/2);
+
     [p1, p2].forEach(p=>{
-      ctx.fillText("λ", p.x+s/2, p.y+s/2);
       ctx.drawImage(imgHat2, -7+p.x+s/2, -60+p.y+s/2, 40, 40);
     })
 
-    enemies.forEach(e=>{
+    enemies = enemies.filter(e=>{
       // Movement logic
       const v = toUnit(e.x-p1.x, e.y-p1.y, 0, 0, e.speed)
       e.x += -e.speed*v[0]
@@ -303,6 +317,18 @@
       // Draw enemies
       ctx.fillText(e.math, e.x+s/2, e.y+s/2);
 
+      for (let i = 0; i < 2; i++) {
+        player = [p1, p2][i];
+        console.log(player.lives);
+        if (e.x-speed < player.x && e.x+speed > player.x &&
+            e.y-speed < player.y && e.y+speed > player.y
+        ){
+          console.log(player);
+          player.lives-=1;
+          return false;
+        }
+      }
+      return true;
     });
 
     bullets.forEach(b=>{
@@ -310,6 +336,39 @@
       ctx.fillText(b.math.math.toString(), b.x+s/2, b.y+s/2)
       ctx.font = "50px Consolas"; // Sets text
     })
+
+    h = w = 78
+
+    for(let i=0; i<2; i++){
+      const player = [p1, p2][i]
+      x = [20, s-w-20][i]
+      ctx.beginPath();
+      ctx.font = "23px Consolas"; // Sets text
+      ctx.fillStyle = "lightgrey";
+      ctx.fillRect(x, 20, w, h);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.lineWidth = "4";
+      ctx.strokeStyle = ["blue", "green"][i];
+      ctx.rect(x, 20, w, h);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.fillStyle = "red";
+      if (player.lives>=1) ctx.fillText('♥︎', x, 41);
+      if (player.lives>=2) ctx.fillText('♥︎', x+20, 41);
+      if (player.lives>=3) ctx.fillText('♥︎', x+40, 41);
+      ctx.stroke();
+
+      if (player.weapon){
+        ctx.beginPath();
+        ctx.fillStyle = "black";
+        ctx.fillText(player.weapon.math, x+10, 80)
+        console.log(player.weapon.math)
+        ctx.stroke();
+      }
+    }
 
     localStorage.setItem("global", JSON.stringify(global));
     requestAnimationFrame(Draw);
