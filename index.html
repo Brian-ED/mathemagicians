@@ -43,7 +43,6 @@
   let c = document.getElementById("myCanvas");
   let ctx = c.getContext("2d");
   let speed = 4
-  let pickupDistance = 500;
   let button = {}
   let actionCooldown = 1;
 
@@ -117,6 +116,7 @@
   function Draw() {
     const timestamp = Date.now()/1000
     let s = min(window.innerWidth, window.innerHeight); // s for Size
+    let pickupDistance = 0.3*s/2;
     ctx.canvas.height = window.innerHeight;
     ctx.canvas.width  = window.innerWidth;
 
