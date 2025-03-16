@@ -35,11 +35,14 @@
     return p
   }
 
+  let startTime = Date.now()/1000
+
   let c = document.getElementById("myCanvas");
   let ctx = c.getContext("2d");
   let speed = 4
   let button = {}
   let shootCooldown = 1;
+
   ctx.font = "50px Consolas"; // Sets text
   let wepons = [
     {from: "+1"  , math:"+1", apply: x => '('+x+')+1'  },
@@ -69,10 +72,13 @@
     ],
     bullets: []
   }
+  isIntro = false;
   let global = localStorage.getItem("global");
   if(!global) {
+    isIntro = true;
     global = initState;
   } else {
+    isIntro = false;
     global = JSON.parse(global);
   }
 
@@ -105,6 +111,7 @@
   // Game logic
   // ---------------
   function Draw() {
+    const timestamp = Date.now()/1000
     let s = min(window.innerWidth, window.innerHeight); // s for Size
     ctx.canvas.height = window.innerHeight;
     ctx.canvas.width  = window.innerWidth;
@@ -112,8 +119,32 @@
     // --------------- //
     // Environment     //
     // --------------- //
-    ctx.drawImage(imgLevelNotebook, 0, 0, s/1.5*1.5, s/1.5)
-    ctx.drawImage(imgIntroDesk, 0, 0, s/2*1.2, s/2)
+    if (isIntro){
+      isIntro = startTime+4 > timestamp;
+      scale = 0.375*(timestamp-startTime)
+      eyeX = 200
+      eyeY = 170
+
+      ctx.drawImage(imgIntroDesk,
+
+        // scale the eyeX offset by the scaling factor
+        // and then push the image horizontally to center canvas
+        -eyeX*scale + s/2,
+
+        // scale the eyeY offset by the scaling factor
+        // and then push the image vertically to center canvas
+        -eyeY*scale + s/2,
+
+        // scale whole image by the scaling factor
+        s*scale,
+        s*scale
+      );
+
+      ctx.drawImage(imgLevelNotebook, -(eyeX-170)*scale + s/2, -(eyeY-140)*scale + s/2, s*scale*0.20, s*scale*0.20);
+      requestAnimationFrame(Draw);
+      return;
+    }
+
 
     // --------------- //
     // Player Movement //
@@ -140,8 +171,6 @@
 
 
     // Shoot logic
-    const timestamp = Date.now()/1000
-
     if (p1.equiped && button[' '] && shootCooldown < timestamp-p1.timeAtLastShooting){
       p1.timeAtLastShooting = timestamp;
 
@@ -174,6 +203,8 @@
     }
 
     if (button['½']) {
+      isIntro = true;
+      startTime = Date.now()/1000
       global = initState;
     }
     // ----------
