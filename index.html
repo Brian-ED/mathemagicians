@@ -10,7 +10,7 @@
     Your browser does not support the HTML canvas tag.
   </canvas>
   <div style="position:absolute">
-    <button type="button" onclick='console.log(123);localStorage.setItem("global", JSON.stringify(initState))'>Click Me!</button>
+    <button type="button" onclick='localStorage.setItem("global", JSON.stringify(initState))'>Click Me!</button>
   </div>
 
 <style>
@@ -114,7 +114,9 @@
   // ---------------
   function Draw() {
     const timestamp = Date.now()/1000
-    let s = min(window.innerWidth, window.innerHeight); // s for Size
+    let sx = window.innerWidth; // s for Size
+    let sy = window.innerHeight; // s for Size
+    let s = min(sx, sy); // s for Size
     let pickupDistance = 0.3*s/2;
     ctx.canvas.height = window.innerHeight;
     ctx.canvas.width  = window.innerWidth;
@@ -130,18 +132,18 @@
 
       // scale the eyeX offset by the scaling factor
       // and then push the image horizontally to center canvas
-      -eyeX*scale + s/2,
+      -eyeX*scale + sx/2,
 
       // scale the eyeY offset by the scaling factor
       // and then push the image vertically to center canvas
-      -eyeY*scale + s/2,
+      -eyeY*scale + sy/2,
 
       // scale whole image by the scaling factor
-      s*scale,
-      s*scale
+      sx*scale,
+      sy*scale
     );
 
-    ctx.drawImage(imgLevelNotebook, -(eyeX-170)*scale + s/2, -(eyeY-140)*scale + s/2, s*scale*0.20, s*scale*0.20);
+    ctx.drawImage(imgLevelNotebook, -(eyeX-170)*scale + sx/2, -(eyeY-140)*scale + sy/2, sx*scale*0.20, sy*scale*0.20);
 
     if (isIntro){
       isIntro = global.startTime+4 > timestamp;
@@ -151,12 +153,12 @@
 
     pickups.forEach(b=>{
       ctx.beginPath();
-      ctx.arc(b.x+s/2, b.y+s/2, 20, 0, 2 * Math.PI);
+      ctx.arc(b.x+sx/2, b.y+sy/2, 20, 0, 2 * Math.PI);
       ctx.stroke();
 
       if (b.weapon){
         ctx.font = "20px Consolas"; // Sets text
-        ctx.fillText(b.weapon.math, b.x+(s-25)/2, b.y+(s+15)/2)
+        ctx.fillText(b.weapon.math, b.x+(sx-25)/2, b.y+(sy+15)/2)
         ctx.font = "50px Consolas"; // Sets text
       }
     })
@@ -165,25 +167,21 @@
     // --------------- //
     // Player Movement //
     // --------------- //
-    p1.dirX = !!button['ArrowRight']-!!button['ArrowLeft'];
-    p1.dirY = !!button['ArrowDown' ]-!!button['ArrowUp'  ];
-    let v1 = toUnit(p1.dirX, p1.dirY, 0, 0, 0)
-    p1.dirX = v1[0];
-    p1.dirY = v1[1];
+    let tempDirX = !!button['ArrowRight']-!!button['ArrowLeft'];
+    let tempDirY = !!button['ArrowDown' ]-!!button['ArrowUp'  ];
+    if (tempDirX || tempDirY) {
+      [p1.dirX, p1.dirY] = toUnit(tempDirX, tempDirY, 0, 0, 0)
+    }
+    p1.x += speed*tempDirX;
+    p1.y += speed*tempDirY;
 
-    p1.x += speed*p1.dirX;
-    p1.y += speed*p1.dirY;
-
-    let v2 = toUnit(
-      !!button['d']-!!button['a'],
-      !!button['s']-!!button['w'],
-      0, 0, 0
-    )
-    p2.dirX = v2[0];
-    p2.dirY = v2[1];
-
-    p2.x += speed*p2.dirX;
-    p2.y += speed*p2.dirY;
+    tempDirX = !!button['d']-!!button['a']
+    tempDirY = !!button['s']-!!button['w']
+    if (tempDirX || tempDirY) {
+      [p2.dirX,p2.dirY] = toUnit(tempDirX, tempDirY, 0, 0, 0)
+    }
+    p2.x += speed*tempDirX;
+    p2.y += speed*tempDirY;
 
     let swapWeaponPlayer = [false, false];
 
@@ -243,12 +241,9 @@
 
         pickups.forEach(p => {
           const distance = dist(p.x, p.y, player.x, player.y)
-          console.log(distance);
           if (actionCooldown < timestamp-player.timeAtLastAction && distance < pickupDistance) {
             player.timeAtLastAction = timestamp;
-            console.log(p);
             [p.weapon, player.weapon] = [player.weapon, p.weapon];
-            console.log(p);
           }
         });
       }
@@ -292,14 +287,13 @@
     ctx.font = "50px Consolas"; // Sets text
 
 
-    ctx.fillText("λ", p1.x+s/2, p1.y+s/2);
-    ctx.fillText("β", p2.x+s/2, p2.y+s/2);
+    ctx.fillText("λ", p1.x+sx/2, p1.y+sy/2);
+    ctx.fillText("β", p2.x+sx/2, p2.y+sy/2);
 
     [p1, p2].forEach(p=>{
-      ctx.drawImage(imgHat, -7+p.x+s/2, -60+p.y+s/2, 40, 40);
+      ctx.drawImage(imgHat, -7+p.x+sx/2, -60+p.y+sy/2, 40, 40);
     })
 
-    console.log(global.enemies);
     global.enemies = global.enemies.filter(e=>{
       // Movement logic
       const v = toUnit(e.x-p1.x, e.y-p1.y, 0, 0, e.speed)
@@ -307,15 +301,13 @@
       e.y += -e.speed*v[1]
 
       // Draw enemies
-      ctx.fillText(e.math, e.x+s/2, e.y+s/2);
+      ctx.fillText(e.math, e.x+sx/2, e.y+sy/2);
 
       for (let i = 0; i < 2; i++) {
         player = [p1, p2][i];
-        console.log(player.lives);
         if (e.x-speed < player.x && e.x+speed > player.x &&
             e.y-speed < player.y && e.y+speed > player.y
         ){
-          console.log(player);
           player.lives-=1;
           return false;
         }
@@ -324,8 +316,9 @@
     });
 
     bullets.forEach(b=>{
+      console.log(b.dirX, b.dirY);
       ctx.font = "20px Consolas"; // Sets text
-      ctx.fillText(b.math.math.toString(), b.x+s/2, b.y+s/2)
+      ctx.fillText(b.math.math.toString(), b.x+sx/2, b.y+sy/2)
       ctx.font = "50px Consolas"; // Sets text
     })
 
@@ -333,7 +326,7 @@
 
     for(let i=0; i<2; i++){
       const player = [p1, p2][i]
-      x = [20, s-w-20][i]
+      x = [20, sx-w-20][i]
       ctx.beginPath();
       ctx.font = "23px Consolas"; // Sets text
       ctx.fillStyle = "lightgrey";
@@ -357,7 +350,6 @@
         ctx.beginPath();
         ctx.fillStyle = "black";
         ctx.fillText(player.weapon.math, x+10, 80)
-        console.log(player.weapon.math)
         ctx.stroke();
       }
     }
