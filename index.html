@@ -52,7 +52,6 @@
     const sqrt = { from: "sqrt", math: "²√", apply: x => 'sqrt(' + x + ')' }
     const square = { from: "^2", math: "²", apply: x => '(' + x + ')^2' }
 
-
     let weapons = [
       plus,
       minus,
@@ -80,9 +79,9 @@
         lives: 3,
       },
       enemies: [
-        { x: -200, y: 300, math: "√3+2", speed: 1 },
-        { x: 200, y: 350, math: "√2", speed: 1 },
-        { x: 500, y: 350, math: "5*√2", speed: 1 },
+        { x: -200, y: 300, math: "sqrt(3+2)", speed: 1 },
+        { x: 200, y: 350, math: "sqrt(2)", speed: 1 },
+        { x: 500, y: 350, math: "5*sqrt(2)", speed: 1 },
         { x: 200, y: 0, math: "1", speed: 1 },
         { x: 200, y: 600, math: "4", speed: 1 },
         { x: 700, y: 600, math: "3", speed: 1 },
@@ -220,12 +219,12 @@
       if (p1.weapon && button['Enter'] && actionCooldown < timestamp - p1.timeAtLastAction) {
         p1.timeAtLastAction = timestamp;
 
-        global.bullets = global.bullets.concat({ x: p1.x, y: p1.y, dirX: p1.dirX, dirY: p1.dirY, math: p1.weapon });
+        global.bullets = global.bullets.concat({ x: p1.x, y: p1.y, dirX: p1.dirX, dirY: p1.dirY, math: p1 });
       }
       if (p2.weapon && button[' '] && actionCooldown < timestamp - p2.timeAtLastAction) {
         p2.timeAtLastAction = timestamp;
 
-        global.bullets = global.bullets.concat({ x: p2.x, y: p2.y, dirX: p2.dirX, dirY: p2.dirY, math: p2.weapon });
+        global.bullets = global.bullets.concat({ x: p2.x, y: p2.y, dirX: p2.dirX, dirY: p2.dirY, math: p2 });
       }
 
       if (button['p']) {
@@ -234,10 +233,6 @@
       if (button['q']) {
         swapWeaponPlayer[1] = true;
       }
-
-      //e.math = nerdamer(p1.weapon.apply(e.math.toString()));
-      //e.math = nerdamer(p2.weapon.apply(e.math.toString()));
-
 
       // ------------- //
       // Gamepad stuff //
@@ -345,15 +340,16 @@
           e.x += -e.speed * v[0]
           e.y += -e.speed * v[1]
 
-          console.log(min,minB);
           if (minB<min) { // incase of bullet
             console.log("hello");
             creek = 40;
             if (e.x - creek < B.x && e.x + creek > B.x &&
               e.y - creek < B.y && e.y + creek > B.y
             ) {
-              console.log("Worked");
-              return false;
+              console.log(B.math.weapon);
+              let o = B.math.weapon.apply(e.math)
+              e.math = nerdamer(o).toString()
+              return e.math!=="0";
             }
             return true;
           } else {
@@ -374,7 +370,7 @@
         b.y += speed * 2 * b.dirY;
 
         ctx.font = "20px Consolas"; // Sets text
-        ctx.fillText(b.math.math.toString(), b.x + sx / 2, b.y + sy / 2)
+        ctx.fillText(b.math.weapon.math.toString(), b.x + sx / 2, b.y + sy / 2)
         ctx.font = "50px Consolas"; // Sets text
       })
 
@@ -424,7 +420,6 @@
       e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
       button[e.key] = false;
     };
-
     // ---------------
     // Experiments
     // ---------------
