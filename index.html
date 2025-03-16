@@ -3,7 +3,6 @@
 <html>
 <body>
   <img id="imgHat" style="display: none" src="hat.png">
-  <img id="imgHat2" style="display: none" src="hat2.png">
   <img id="imgIntroDesk" style="display: none" src="intro-desk.png">
   <img id="imgLevelNotebook" style="display: none" src="levelNotebook.jpg">
 
@@ -297,7 +296,7 @@
     ctx.fillText("β", p2.x+s/2, p2.y+s/2);
 
     [p1, p2].forEach(p=>{
-      ctx.drawImage(imgHat2, -7+p.x+s/2, -60+p.y+s/2, 40, 40);
+      ctx.drawImage(imgHat, -7+p.x+s/2, -60+p.y+s/2, 40, 40);
     })
 
     console.log(global.enemies);
