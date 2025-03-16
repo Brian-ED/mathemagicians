@@ -22,27 +22,41 @@
 </style>
 
 <script>
+  // Reset backup:
+  //localStorage.setItem("global", JSON.stringify(initState))
   let min = (a,b)=>a>b?b:a;
   let c = document.getElementById("myCanvas");
   let ctx = c.getContext("2d");
   let speed = 4
   let button = {}
+  let shootCooldown = 1;
+  let wepons = [
+    {from: "+1"  , math:"+1", apply: x => '('+x+')+1'  },
+    {from: "-1"  , math:"-1", apply: x => '('+x+')-1'  },
+    {from: "sqrt", math:"²√", apply: x => 'sqrt('+x+')'},
+    {from: "^2"  , math:"²" , apply: x => '('+x+')^2'  },
+  ]
 
   // ---------------
   // State variables
   // ---------------
   let initState = {
     p1: {
-      x:1,
-      y:2,
+      x:1,y:2,
+      dirX:1,diry:0,
+      timeAtLastShooting:-Infinity,
+      equiped: null,
     },
     p2: {
-      x:1,
-      y:2,
+      x:1,y:2,
+      dirX:1,diry:0,
+      timeAtLastShooting:-Infinity,
+      equiped: null,
     },
     enemies: [
-      {x:0, y:0, math:"1", speed:2},
+      {x:20, y:0, math: "1", speed:2},
     ],
+    bullets: []
   }
   let global = localStorage.getItem("global");
   if(!global) {
@@ -53,8 +67,12 @@
 
   let p1 = global.p1;
   let p2 = global.p2;
-  enemies = global.enemies;
+  let enemies = global.enemies;
+  let bullets = global.bullets;
 
+  // TEST STUFF!!!!
+  p1.equiped = wepons[1]
+  p2.equiped = wepons[1]
 
   // ---------------
   // Gamepad
@@ -80,20 +98,44 @@
     ctx.canvas.height = window.innerHeight;
     ctx.canvas.width  = window.innerWidth;
 
-    // Player Movement
+    // --------------- //
+    // Player Movement //
+    // --------------- //
     p1.x += speed*(!!button['ArrowRight']-!!button['ArrowLeft']);
     p1.y += speed*(!!button['ArrowDown' ]-!!button['ArrowUp'  ]);
 
     p2.x += speed*(!!button['d']-!!button['a']);
     p2.y += speed*(!!button['s']-!!button['w']);
 
+    // Shoot logic
+    const timestamp = Date.now()/1000
+
+    if (p1.equiped && button[' '] && shootCooldown < timestamp-p1.timeAtLastShooting){
+      p1.timeAtLastShooting = timestamp;
+
+      bullets = bullets.concat({x:p1.x, y:p1.y, dirX:p1.dirX, dirY:p1.dirY, math:p1.equiped});
+
+    }
+    if (p2.equiped && button['Enter'] && shootCooldown < timestamp-p2.timeAtLastShooting) {
+      p2.timeAtLastShooting = timestamp;
+
+      bullets = bullets.concat({x:p2.x, y:p2.y, dirX:p2.dirX, dirY:p2.dirY, math:p2.equiped});
+    }
+
+    //e.math = nerdamer(p1.equiped.apply(e.math.toString()));
+    //e.math = nerdamer(p2.equiped.apply(e.math.toString()));
+
+
+    // ------------- //
+    // Gamepad stuff //
+    // ------------- //
     for(let i=0; i<2; i++){
       let gamepad = gamepads[i];
       if (gamepad) {
         player = [p1, p2][i];
         const sign1 = Math.sign(gamepad.axes[0]);
         const sign2 = Math.sign(gamepad.axes[1]);
-        console.log(gamepad)
+
         player.x += speed*sign1*Math.floor(Math.abs(gamepad.axes[0])*7)*(1/7)
         player.y += speed*sign2*Math.floor(Math.abs(gamepad.axes[1])*7)*(1/7)
       }
@@ -166,6 +208,12 @@
 
     });
 
+    bullets.forEach(b=>{
+      ctx.font = "20px Consolas"; // Sets text
+      ctx.fillText(b.math.math.toString(), b.x+s/2, b.y+s/2)
+      ctx.font = "50px Consolas"; // Sets text
+    })
+
     localStorage.setItem("global", JSON.stringify(global));
     requestAnimationFrame(Draw);
   }
@@ -173,7 +221,6 @@
 
   document.onkeydown = function (e) {
     e = e || window.event; // Fixes internet explorer using "window.event" instead of the argument to the callback
-    console.log(button);
     button[e.key] = true;
   };
 
