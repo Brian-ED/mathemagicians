@@ -110,19 +110,34 @@
     ctx.canvas.width  = window.innerWidth;
 
     // --------------- //
+    // Environment     //
+    // --------------- //
+    ctx.drawImage(imgLevelNotebook, 0, 0, s/1.5*1.5, s/1.5)
+    ctx.drawImage(imgIntroDesk, 0, 0, s/2*1.2, s/2)
+
+    // --------------- //
     // Player Movement //
     // --------------- //
     p1.dirX = !!button['ArrowRight']-!!button['ArrowLeft'];
     p1.dirY = !!button['ArrowDown' ]-!!button['ArrowUp'  ];
-    let v = toUnit(p1.dirX, p1.dirY, 0, 0, 0)
-    p1.dirX = v[0];
-    p1.dirY = v[1];
+    let v1 = toUnit(p1.dirX, p1.dirY, 0, 0, 0)
+    p1.dirX = v1[0];
+    p1.dirY = v1[1];
 
     p1.x += speed*p1.dirX;
     p1.y += speed*p1.dirY;
 
-    p2.x += speed*(!!button['d']-!!button['a']);
-    p2.y += speed*(!!button['s']-!!button['w']);
+    let v2 = toUnit(
+      !!button['d']-!!button['a'],
+      !!button['s']-!!button['w'],
+      0, 0, 0
+    )
+    p2.dirX = v2[0];
+    p2.dirY = v2[1];
+
+    p2.x += speed*p2.dirX;
+    p2.y += speed*p2.dirY;
+
 
     // Shoot logic
     const timestamp = Date.now()/1000
