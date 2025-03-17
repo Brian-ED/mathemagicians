@@ -11,7 +11,7 @@
     Your browser does not support the HTML canvas tag.
   </canvas>
   <div style="position:absolute">
-    <button type="button" onclick='localStorage.setItem("global", JSON.stringify(initState));global={};window.location.reload()'>RESET GAME!</button>
+    <button style="font-size:10pt;" type="button" onclick='localStorage.setItem("global", JSON.stringify(initState));global={};window.location.reload()'>RESET GAME!</button>
   </div>
 
   <style>
@@ -104,6 +104,8 @@
       pickups: [
         { x: 140, y: 50, weapon: sqrt },
         { x: -120, y: -100, weapon: plus },
+        { x: -50, y: 200, weapon: minus },
+        { x: -40, y: -300, weapon: square },
       ],
     }
     isIntro = false;
@@ -325,7 +327,7 @@
           players = [p1, p2];
           bullets = global.bullets;
           players.forEach(p => { d = dist(p.x, p.y, e.x, e.y); if (d < min) { minI = i; min = d; }; i++ })
-          bullets.forEach(p => { d = dist(p.x, p.y, e.x, e.y); if (d < minB) { minIB = iB; minB = d; }; iB++ })
+          bullets.forEach(p => {if(p!==undefined && p!==null) {d = dist(p.x, p.y, e.x, e.y); if (d < minB) { minIB = iB; minB = d; }}; iB++ })
           let p = players[minI];
           let B = bullets[minIB];
 
@@ -351,9 +353,10 @@
               else if (x=="sqrt"){o=sqrt.apply(e.math);}
               else if (x=="^2"){o=square.apply(e.math);}
               else {return true};
-              console.log(e)
-              e.math = nerdamer(o).toString()
-              console.log(e)
+              console.log(e);
+              e.math = nerdamer(o).toString();
+              console.log(e);
+              bullets[minIB]=undefined;
               return e.math!=="0";
             }
             return true;
@@ -369,7 +372,7 @@
         }
       )
 
-      global.bullets.forEach(b => {
+      global.bullets.filter(x=>(x!==null && x!==undefined)).forEach(b => {
         //      console.log(b)
         b.x += speed * 2 * b.dirX;
         b.y += speed * 2 * b.dirY;
