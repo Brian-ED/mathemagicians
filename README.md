@@ -23,3 +23,6 @@ git clone --recurse-submodules https://github.com/Brian-ED/mathemagicians.git
 - **Move**: left joystick
 - **Pickup**: colored, bottom
 - **Cast**: colored, left
+
+## Bugs
+If you pick up a weapon from a bubble where no weapon exists, you pick up the no-weapon and crash.
